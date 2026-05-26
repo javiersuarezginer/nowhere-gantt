@@ -17,8 +17,7 @@ export default async function handler(req, res) {
   if (!token) return res.status(401).json({ error: 'Token no configurado' });
 
   const path = req.query.path || '';
-  const url = `https://api.todoist.com/rest/v2/${path}`;
-
+const url = `https://api.todoist.com/api/v1/${path}`;
   try {
     const options = {
       method: req.method,
