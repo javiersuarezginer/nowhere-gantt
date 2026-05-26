@@ -1,5 +1,5 @@
 // api/todoist.js
-// Proxy serverless para Todoist API — evita CORS en el browser
+// Proxy serverless para Todoist API v1 — evita CORS en el browser
 
 export const config = {
   api: { bodyParser: true },
@@ -12,12 +12,12 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // Token desde variable de entorno (Vercel) o desde header (fallback)
   const token = process.env.TODOIST_TOKEN || req.headers['x-todoist-token'];
   if (!token) return res.status(401).json({ error: 'Token no configurado' });
 
   const path = req.query.path || '';
-const url = `https://api.todoist.com/api/v1/${path}`;
+  const url = `https://api.todoist.com/api/v1/${path}`;
+
   try {
     const options = {
       method: req.method,
@@ -33,8 +33,16 @@ const url = `https://api.todoist.com/api/v1/${path}`;
 
     const response = await fetch(url, options);
     const text = await response.text();
+
     let data;
-    try { data = JSON.parse(text); } catch { data = text; }
+    try {
+      const parsed = JSON.parse(text);
+      // API v1 devuelve los datos dentro de "results" para listados
+      data = parsed.results !== undefined ? parsed.results : parsed;
+    } catch {
+      data = text;
+    }
+
     res.status(response.status).json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
