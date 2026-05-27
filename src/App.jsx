@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 
 async function todoistFetch(path, method = "GET", body = null) {
   const opts = { method, headers: { "Content-Type": "application/json" } };
@@ -25,7 +25,6 @@ const PHASE_COLORS = {
   entrega:           { bg:"#FFEDD5", border:"#EA580C", text:"#7C2D12" },
   default:           { bg:"#F1F5F9", border:"#94A3B8", text:"#334155" },
 };
-
 const PHASES = Object.keys(PHASE_COLORS).filter(k=>k!=="default");
 
 function getPhaseColor(labels=[]) {
@@ -45,7 +44,7 @@ function hex2rgba(hex, a) {
 
 function parseDate(s) { if(!s) return null; return new Date(s.split("T")[0]+"T00:00:00"); }
 function fmtDate(d) { if(!d) return ""; return d.toISOString().split("T")[0]; }
-function fmtShort(d) { if(!d) return "—"; return d.toLocaleDateString("es",{day:"numeric",month:"short"}); }
+function fmtShort(d) { if(!d) return ""; return d.toLocaleDateString("es",{day:"numeric",month:"short"}); }
 function addDays(d,n) { const r=new Date(d); r.setDate(r.getDate()+n); return r; }
 function diffDays(a,b) { return Math.round((b-a)/86400000); }
 function today() { const d=new Date(); d.setHours(0,0,0,0); return d; }
@@ -80,15 +79,17 @@ function DatePicker({value, onChange, onClose}) {
   return (
     <div style={{background:"#FFF",border:"1px solid #E2E8F0",borderRadius:10,padding:12,width:230,boxShadow:"0 8px 24px rgba(0,0,0,0.12)"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-        <button onClick={()=>setMonth(m=>new Date(m.getFullYear(),m.getMonth()-1,1))} style={{background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#64748B",padding:"0 6px"}}>‹</button>
+        <button onClick={()=>setMonth(m=>new Date(m.getFullYear(),m.getMonth()-1,1))} style={{background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#64748B",padding:"0 6px"}}>&#8249;</button>
         <span style={{fontSize:12,fontWeight:600,color:"#334155"}}>{month.toLocaleString("es",{month:"long",year:"numeric"})}</span>
-        <button onClick={()=>setMonth(m=>new Date(m.getFullYear(),m.getMonth()+1,1))} style={{background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#64748B",padding:"0 6px"}}>›</button>
+        <button onClick={()=>setMonth(m=>new Date(m.getFullYear(),m.getMonth()+1,1))} style={{background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#64748B",padding:"0 6px"}}>&#8250;</button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
         {["L","M","X","J","V","S","D"].map(d=><div key={d} style={{textAlign:"center",fontSize:9,color:"#94A3B8",fontWeight:600,padding:"3px 0"}}>{d}</div>)}
         {cells.map((d,i)=>{
           const isSel=d&&value&&d.getTime()===value.getTime();
-          return <div key={i} onClick={()=>{if(d){onChange(new Date(d.getFullYear(),d.getMonth(),d.getDate()));onClose();}}} style={{textAlign:"center",fontSize:11,padding:"6px 2px",borderRadius:5,cursor:d?"pointer":"default",background:isSel?"#3B82F6":"transparent",color:isSel?"#FFF":d?"#334155":"transparent",fontWeight:isSel?700:400,transition:"background 0.1s"}}
+          return <div key={i} onClick={()=>{if(d){onChange(new Date(d.getFullYear(),d.getMonth(),d.getDate()));onClose();}}}
+            style={{textAlign:"center",fontSize:11,padding:"6px 2px",borderRadius:5,cursor:d?"pointer":"default",
+              background:isSel?"#3B82F6":"transparent",color:isSel?"#FFF":d?"#334155":"transparent",fontWeight:isSel?700:400}}
             onMouseEnter={e=>{if(d&&!isSel)e.currentTarget.style.background="#F1F5F9";}}
             onMouseLeave={e=>{if(d&&!isSel)e.currentTarget.style.background="transparent";}}
           >{d?d.getDate():""}</div>;
@@ -99,7 +100,7 @@ function DatePicker({value, onChange, onClose}) {
 }
 
 // ── TASK POPUP ────────────────────────────────────────────────
-function TaskPopup({task, dates, proj, tasks, onSave, onClose, onDeleteDep, onAddDep}) {
+function TaskPopup({task, dates, proj, onSave, onClose, onDeleteDep}) {
   const [name, setName] = useState(task.content);
   const [startDate, setStartDate] = useState(dates.start);
   const [endDate, setEndDate] = useState(dates.end);
@@ -108,7 +109,6 @@ function TaskPopup({task, dates, proj, tasks, onSave, onClose, onDeleteDep, onAd
   const [showEndPicker, setShowEndPicker] = useState(false);
   const deps = getDeps(task);
   const color = getProjectColor(proj.color);
-  const phaseColor = getPhaseColor(labels);
 
   function togglePhase(phase) {
     setLabels(prev => prev.includes(phase) ? prev.filter(l=>l!==phase) : [...prev.filter(l=>!PHASES.includes(l)), phase]);
@@ -116,68 +116,52 @@ function TaskPopup({task, dates, proj, tasks, onSave, onClose, onDeleteDep, onAd
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.3)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={onClose}>
-      <div style={{background:"#FFF",borderRadius:14,padding:28,width:480,maxWidth:"90vw",boxShadow:"0 20px 60px rgba(0,0,0,0.15)",position:"relative"}} onClick={e=>e.stopPropagation()}>
-        {/* Header */}
+      <div style={{background:"#FFF",borderRadius:14,padding:28,width:480,maxWidth:"90vw",boxShadow:"0 20px 60px rgba(0,0,0,0.15)"}} onClick={e=>e.stopPropagation()}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20}}>
-          <div>
+          <div style={{flex:1}}>
             <div style={{fontSize:11,fontWeight:600,color,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>{proj.name}</div>
             <input value={name} onChange={e=>setName(e.target.value)} style={{fontSize:17,fontWeight:700,color:"#0F172A",border:"none",outline:"none",width:"100%",background:"transparent",fontFamily:"inherit"}} />
           </div>
-          <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,color:"#94A3B8",lineHeight:1,padding:4}}>×</button>
+          <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,color:"#94A3B8",lineHeight:1,padding:4}}>x</button>
         </div>
-
-        {/* Fechas */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
           <div style={{position:"relative"}}>
             <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Inicio</div>
-            <button onClick={()=>{setShowStartPicker(s=>!s);setShowEndPicker(false);}} style={{width:"100%",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"8px 12px",fontSize:13,color:"#334155",cursor:"pointer",textAlign:"left",fontFamily:"inherit"}}>
-              {fmtShort(startDate)}
-            </button>
-            {showStartPicker && <div style={{position:"absolute",top:"100%",left:0,zIndex:10,marginTop:4}}>
-              <DatePicker value={startDate} onChange={d=>{if(d<=endDate)setStartDate(d);setShowStartPicker(false);}} onClose={()=>setShowStartPicker(false)}/>
+            <button onClick={()=>{setShowStartPicker(s=>!s);setShowEndPicker(false);}} style={{width:"100%",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"8px 12px",fontSize:13,color:"#334155",cursor:"pointer",textAlign:"left",fontFamily:"inherit"}}>{fmtShort(startDate)}</button>
+            {showStartPicker && <div style={{position:"absolute",top:"100%",left:0,zIndex:600,marginTop:4}}>
+              <DatePicker value={startDate} onChange={d=>{if(d<=endDate){setStartDate(d);}setShowStartPicker(false);}} onClose={()=>setShowStartPicker(false)}/>
             </div>}
           </div>
           <div style={{position:"relative"}}>
             <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Fin</div>
-            <button onClick={()=>{setShowEndPicker(s=>!s);setShowStartPicker(false);}} style={{width:"100%",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"8px 12px",fontSize:13,color:"#334155",cursor:"pointer",textAlign:"left",fontFamily:"inherit"}}>
-              {fmtShort(endDate)}
-            </button>
-            {showEndPicker && <div style={{position:"absolute",top:"100%",left:0,zIndex:10,marginTop:4}}>
-              <DatePicker value={endDate} onChange={d=>{if(d>=startDate)setEndDate(d);setShowEndPicker(false);}} onClose={()=>setShowEndPicker(false)}/>
+            <button onClick={()=>{setShowEndPicker(s=>!s);setShowStartPicker(false);}} style={{width:"100%",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"8px 12px",fontSize:13,color:"#334155",cursor:"pointer",textAlign:"left",fontFamily:"inherit"}}>{fmtShort(endDate)}</button>
+            {showEndPicker && <div style={{position:"absolute",top:"100%",left:0,zIndex:600,marginTop:4}}>
+              <DatePicker value={endDate} onChange={d=>{if(d>=startDate){setEndDate(d);}setShowEndPicker(false);}} onClose={()=>setShowEndPicker(false)}/>
             </div>}
           </div>
         </div>
-
-        {/* Fase */}
         <div style={{marginBottom:20}}>
           <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Fase</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
             {PHASES.map(phase=>{
               const pc=PHASE_COLORS[phase], active=labels.includes(phase);
-              return <button key={phase} onClick={()=>togglePhase(phase)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,fontWeight:500,border:`1.5px solid ${active?pc.border:hex2rgba(pc.border,0.3)}`,background:active?pc.bg:"transparent",color:active?pc.text:"#94A3B8",cursor:"pointer",transition:"all 0.12s"}}>{phase}</button>;
+              return <button key={phase} onClick={()=>togglePhase(phase)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,fontWeight:500,border:`1.5px solid ${active?pc.border:hex2rgba(pc.border,0.3)}`,background:active?pc.bg:"transparent",color:active?pc.text:"#94A3B8",cursor:"pointer"}}>{phase}</button>;
             })}
           </div>
         </div>
-
-        {/* Dependencias */}
         <div style={{marginBottom:24}}>
           <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Dependencias</div>
-          {deps.length===0 ? (
-            <div style={{fontSize:12,color:"#CBD5E1"}}>Sin dependencias. Usa el botón 🔗 Dependencia para crear una.</div>
-          ) : (
+          {deps.length===0 ? <div style={{fontSize:12,color:"#CBD5E1"}}>Sin dependencias.</div> : (
             <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
               {deps.map(dep=>(
                 <div key={dep} style={{display:"flex",alignItems:"center",gap:4,background:"#F1F5F9",borderRadius:20,padding:"3px 10px 3px 8px",fontSize:11,color:"#64748B"}}>
-                  <span>🔗</span>
-                  <span>{dep}</span>
-                  <button onClick={()=>onDeleteDep(task,dep)} style={{background:"none",border:"none",cursor:"pointer",color:"#94A3B8",fontSize:13,lineHeight:1,padding:"0 0 0 2px"}} title="Eliminar dependencia">×</button>
+                  <span>link</span><span>{dep}</span>
+                  <button onClick={()=>onDeleteDep(task,dep)} style={{background:"none",border:"none",cursor:"pointer",color:"#94A3B8",fontSize:13,lineHeight:1}}>x</button>
                 </div>
               ))}
             </div>
           )}
         </div>
-
-        {/* Actions */}
         <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
           <button onClick={onClose} style={{padding:"8px 16px",background:"transparent",border:"1px solid #E2E8F0",borderRadius:8,fontSize:12,color:"#64748B",cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
           <button onClick={()=>onSave(task,name,startDate,endDate,labels)} style={{padding:"8px 20px",background:"#3B82F6",border:"none",borderRadius:8,fontSize:12,color:"#FFF",cursor:"pointer",fontWeight:600,fontFamily:"inherit"}}>Guardar</button>
@@ -191,7 +175,10 @@ function TaskPopup({task, dates, proj, tasks, onSave, onClose, onDeleteDep, onAd
 export default function App() {
   const [projects,setProjects]=useState([]);
   const [tasks,setTasks]=useState([]);
-  const [taskOrder,setTaskOrder]=useState({});
+  // FIX: orden persiste en localStorage
+  const [taskOrder,setTaskOrder]=useState(()=>{
+    try { return JSON.parse(localStorage.getItem("gantt_task_order")||"{}"); } catch { return {}; }
+  });
   const [selProj,setSelProj]=useState(null);
   const [collapsed,setCollapsed]=useState(new Set());
   const [loading,setLoading]=useState(true);
@@ -203,10 +190,16 @@ export default function App() {
   const [connSrc,setConnSrc]=useState(null);
   const [popup,setPopup]=useState(null);
   const [rangeStart,setRangeStart]=useState(()=>{const d=today();d.setDate(d.getDate()-7);return d;});
-
   const DAYS=120, DAY_W=26, ROW_H=36, HEADER_H=56;
   const vdRef=useRef(null);
   const dragRef=useRef(null);
+  const [dragState,setDragState]=useState(null);
+  const [vertDrag,setVertDrag]=useState(null);
+
+  // FIX: persistir taskOrder en localStorage al cambiar
+  useEffect(()=>{
+    try { localStorage.setItem("gantt_task_order", JSON.stringify(taskOrder)); } catch {}
+  },[taskOrder]);
 
   useEffect(()=>{loadData();},[]);
 
@@ -216,9 +209,14 @@ export default function App() {
       const [projs,tsks]=await Promise.all([todoistFetch("projects"),todoistFetch("tasks")]);
       setProjects(projs);setTasks(tsks);
       if(!selProj) setSelProj(new Set(projs.map(p=>p.id)));
-      const ord={};
-      projs.forEach(p=>{ord[p.id]=tsks.filter(t=>t.project_id===p.id).map(t=>t.id);});
-      setTaskOrder(ord);
+      // FIX: solo inicializar proyectos que no tienen orden guardado
+      setTaskOrder(prev=>{
+        const saved = {...prev};
+        projs.forEach(p=>{
+          if(!saved[p.id]) saved[p.id]=tsks.filter(t=>t.project_id===p.id).map(t=>t.id);
+        });
+        return saved;
+      });
     } catch(e){setError("Error: "+e.message);}
     finally{setLoading(false);}
   }
@@ -227,13 +225,11 @@ export default function App() {
   const rangeEnd=addDays(rangeStart,DAYS);
 
   const twDates=tasks.filter(t=>selProj?.has(t.project_id)).map(t=>({task:t,dates:getTaskDates(t)})).filter(({dates})=>dates&&dates.end>=rangeStart&&dates.start<=rangeEnd);
-
   const byProj={};
   twDates.forEach(({task,dates})=>{
     if(!byProj[task.project_id])byProj[task.project_id]=[];
     byProj[task.project_id].push({task,dates});
   });
-
   Object.keys(byProj).forEach(pid=>{
     const ord=taskOrder[pid]||[];
     byProj[pid].sort((a,b)=>{const ia=ord.indexOf(a.task.id),ib=ord.indexOf(b.task.id);return(ia<0?999:ia)-(ib<0?999:ib);});
@@ -247,20 +243,19 @@ export default function App() {
     if(!isCol) byProj[pid].forEach(({task,dates})=>rows.push({type:"task",task,dates,proj}));
   });
 
-  // Mapa rowIndex por taskId para flechas
-  const rowIndexByTaskId={};
-  rows.forEach((r,i)=>{if(r.type==="task")rowIndexByTaskId[r.task.id]=i;});
-
   const FIXED_W=labelW+DATE_COL;
   function xFromDate(date){return FIXED_W+diffDays(rangeStart,date)*DAY_W;}
   const totalW=FIXED_W+DAYS*DAY_W+40;
   const totalH=HEADER_H+rows.length*ROW_H+60;
+  const todayD=today();
 
-  // ── SAVE ──────────────────────────────────────────────────
+  // ── SAVE ─────────────────────────────────────────────────
+  // FIX: usar 'labels' no 'label_ids' para Todoist API v1
+  // FIX: no recalcular delta desde estado antiguo — usar ns/ne directos
   async function saveTaskFull(task, newName, newStart, newEnd, newLabels) {
     setSaving(task.id);
-    const oldDates=getTaskDates(task);
-    const delta=diffDays(oldDates?.end||newEnd,newEnd);
+    const oldEnd = getTaskDates(task)?.end;
+    const delta = oldEnd ? diffDays(oldEnd, newEnd) : 0;
     const toUpdate=[{task,ns:newStart,ne:newEnd,name:newName,labels:newLabels}];
     const vis=new Set([task.id]);
     function collectDeps(t,d){
@@ -275,7 +270,9 @@ export default function App() {
     try {
       const MN=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
       for(const {task:t,ns,ne,name,labels} of toUpdate){
-        const body={content:name,label_ids:labels};
+        const body={content:name};
+        // FIX: campo correcto para labels en API v1
+        if(labels && labels.length>0) body.labels=labels;
         if(t.deadline?.date) body.deadline={date:fmtDate(ne)};
         else body.due_date=fmtDate(ne);
         const sl=`Inicio: ${ns.getDate()} ${MN[ns.getMonth()]}`;
@@ -283,17 +280,19 @@ export default function App() {
         body.description=sl+(desc?"\n"+desc:"");
         await todoistFetch(`tasks/${t.id}`,"POST",body);
       }
+      // FIX: actualizar estado local inmediatamente con los valores nuevos
       setTasks(prev=>prev.map(t=>{
         const u=toUpdate.find(x=>x.task.id===t.id);if(!u)return t;
-        const {ns,ne,name,labels}=u,r={...t,content:name,labels};
+        const {ns,ne,name,labels}=u;
         const MN=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+        const r={...t,content:name,labels:labels||t.labels};
         if(t.deadline?.date)r.deadline={...t.deadline,date:fmtDate(ne)};
         else r.due={...t.due,date:fmtDate(ne)};
         let desc=(t.description||"").replace(/Inicio:.*(\n|$)/i,"").trim();
         r.description=`Inicio: ${ns.getDate()} ${MN[ns.getMonth()]}`+(desc?"\n"+desc:"");
         return r;
       }));
-    } catch{setError("Error guardando.");}
+    } catch(e){setError("Error guardando: "+e.message);}
     finally{setSaving(null);setPopup(null);}
   }
 
@@ -301,7 +300,6 @@ export default function App() {
     return saveTaskFull(task,task.content,ns,ne,task.labels||[]);
   }
 
-  // ── DEPENDENCIAS ──────────────────────────────────────────
   async function handleBarClick(task) {
     if(!connectMode)return;
     if(!connSrc){setConnSrc(task);return;}
@@ -332,30 +330,34 @@ export default function App() {
     finally{setSaving(null);}
   }
 
-  async function addDep(task, depName) {
-    await handleBarClickDirect(task, depName);
-  }
-
-  // ── DRAG (mover barra) ────────────────────────────────────
-  const [dragState,setDragState]=useState(null);
-
+  // ── DRAG horizontal ──────────────────────────────────────
   function onBarDragStart(e,task,dates) {
     if(connectMode)return;
     e.preventDefault();e.stopPropagation();
-    const sx=e.clientX,oe=new Date(dates.end),os=new Date(dates.start);
-    dragRef.current={taskId:task.id,sx,oe,os,delta:0};
+    const sx=e.clientX;
+    const oe=new Date(dates.end);
+    const os=new Date(dates.start);
+    dragRef.current={taskId:task.id,sx,oe,os,delta:0,task};
     setDragState({taskId:task.id,delta:0});
     function onMove(ev){
       const d=Math.round((ev.clientX-sx)/DAY_W);
       if(d!==dragRef.current.delta){dragRef.current.delta=d;setDragState({taskId:task.id,delta:d});}
     }
     function onUp(){
-      window.removeEventListener("mousemove",onMove);window.removeEventListener("mouseup",onUp);
-      const {delta,oe,os}=dragRef.current;
-      if(delta!==0) saveDate(task,addDays(os,delta),addDays(oe,delta));
-      dragRef.current=null;setDragState(null);
+      window.removeEventListener("mousemove",onMove);
+      window.removeEventListener("mouseup",onUp);
+      const {delta,oe,os,task}=dragRef.current;
+      // FIX: solo guardar si hay movimiento real
+      if(delta!==0){
+        const ns=addDays(os,delta);
+        const ne=addDays(oe,delta);
+        saveDate(task,ns,ne);
+      }
+      dragRef.current=null;
+      setDragState(null);
     }
-    window.addEventListener("mousemove",onMove);window.addEventListener("mouseup",onUp);
+    window.addEventListener("mousemove",onMove);
+    window.addEventListener("mouseup",onUp);
   }
 
   function getBarDates(task,dates){
@@ -366,9 +368,7 @@ export default function App() {
     return dates;
   }
 
-  // ── VERT DRAG ─────────────────────────────────────────────
-  const [vertDrag,setVertDrag]=useState(null);
-
+  // ── DRAG vertical ────────────────────────────────────────
   function onVertDragStart(e,task,proj){
     e.preventDefault();
     const sy=e.clientY,pid=proj.id;
@@ -397,40 +397,28 @@ export default function App() {
     window.addEventListener("mousemove",onMove);window.addEventListener("mouseup",onUp);
   }
 
-  const todayD=today();
-
-  // ── DEPENDENCY ARROWS ─────────────────────────────────────
-  // Generar paths SVG para flechas de dependencia
+  // ── DEPENDENCY ARROWS ────────────────────────────────────
   function buildArrows() {
     const arrows=[];
     rows.forEach((row,ri)=>{
       if(row.type!=="task")return;
       const {task,dates}=row;
-      const deps=getDeps(task);
-      deps.forEach(depName=>{
-        // Buscar tarea origen
+      getDeps(task).forEach(depName=>{
         const srcRow=rows.find(r=>r.type==="task"&&r.task.content.toLowerCase()===depName);
         if(!srcRow)return;
         const srcRi=rows.indexOf(srcRow);
         const srcDates=getBarDates(srcRow.task,srcRow.dates);
         const dstDates=getBarDates(task,dates);
-
-        // Origen: fin de la barra fuente
         const x1=xFromDate(srcDates.end)+DAY_W;
         const y1=HEADER_H+srcRi*ROW_H+ROW_H/2;
-        // Destino: inicio de la barra destino
         const x2=xFromDate(dstDates.start);
         const y2=HEADER_H+ri*ROW_H+ROW_H/2;
-
-        // Bezier curva
         const cx=x1+(x2-x1)*0.5;
-        const path=`M ${x1} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}`;
-        arrows.push({path,x2,y2,key:`${srcRow.task.id}-${task.id}`});
+        arrows.push({path:`M ${x1} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}`,key:`${srcRow.task.id}-${task.id}`});
       });
     });
     return arrows;
   }
-
   const arrows=buildArrows();
 
   return (
@@ -444,49 +432,50 @@ export default function App() {
           {error&&<span style={{fontSize:11,color:"#EF4444"}}>{error}</span>}
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
-          <Btn onClick={()=>setRangeStart(d=>addDays(d,-30))}>← 30d</Btn>
+          <Btn onClick={()=>setRangeStart(d=>addDays(d,-30))}>- 30d</Btn>
           <Btn onClick={()=>setRangeStart(()=>{const d=today();d.setDate(d.getDate()-7);return d;})} primary>Hoy</Btn>
-          <Btn onClick={()=>setRangeStart(d=>addDays(d,30))}>30d →</Btn>
-          <Btn onClick={loadData} style={{marginLeft:8}}>↻ Sync</Btn>
+          <Btn onClick={()=>setRangeStart(d=>addDays(d,30))}>30d +</Btn>
+          <Btn onClick={loadData} style={{marginLeft:8}}>Sync</Btn>
           <Btn onClick={()=>{setConnectMode(m=>!m);setConnSrc(null);}} style={{marginLeft:8,background:connectMode?"#EFF6FF":"transparent",border:connectMode?"1px solid #3B82F6":"1px solid #E2E8F0",color:connectMode?"#3B82F6":"#64748B"}}>
-            {connectMode?(connSrc?"← Clic en destino":"Clic en origen"):"🔗 Dependencia"}
+            {connectMode?(connSrc?"clic en destino":"clic en origen"):"Dependencia"}
           </Btn>
         </div>
       </div>
 
       <div style={{display:"flex",flex:1,overflow:"hidden"}}>
-        {/* Sidebar */}
+        {/* Sidebar proyectos */}
         <div style={{width:200,background:"#FFF",borderRight:"1px solid #E2E8F0",overflowY:"auto",flexShrink:0}}>
           <div style={{padding:"14px 16px 8px",fontSize:10,letterSpacing:2,color:"#94A3B8",textTransform:"uppercase",fontWeight:600}}>Proyectos</div>
           {projects.map(p=>{
             const color=getProjectColor(p.color),active=selProj?.has(p.id);
-            return <div key={p.id} onClick={()=>{setSelProj(prev=>{const n=new Set(prev);n.has(p.id)?n.delete(p.id):n.add(p.id);return n;});}} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 16px 7px 12px",cursor:"pointer",borderLeft:`3px solid ${active?color:"transparent"}`,background:active?hex2rgba(color,0.06):"transparent",transition:"all 0.12s",opacity:tasks.some(t=>t.project_id===p.id&&getTaskDates(t))?1:0.35}}>
+            return <div key={p.id} onClick={()=>setSelProj(prev=>{const n=new Set(prev);n.has(p.id)?n.delete(p.id):n.add(p.id);return n;})}
+              style={{display:"flex",alignItems:"center",gap:8,padding:"7px 16px 7px 12px",cursor:"pointer",borderLeft:`3px solid ${active?color:"transparent"}`,background:active?hex2rgba(color,0.06):"transparent",transition:"all 0.12s",opacity:tasks.some(t=>t.project_id===p.id&&getTaskDates(t))?1:0.35}}>
               <div style={{width:8,height:8,borderRadius:"50%",background:active?color:"#CBD5E1",flexShrink:0}}/>
               <div style={{fontSize:12,color:active?"#1E293B":"#94A3B8",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",fontWeight:active?500:400}}>{p.name}</div>
             </div>;
           })}
         </div>
 
-        {/* Gantt */}
+        {/* Gantt — scroll container */}
         <div style={{flex:1,overflow:"auto",position:"relative"}}>
+          {/* Inner container: ancho total */}
           <div style={{width:totalW,minHeight:totalH,position:"relative"}}>
 
-            {/* SVG flechas dependencias */}
+            {/* SVG flechas */}
             <svg style={{position:"absolute",top:0,left:0,width:totalW,height:totalH,pointerEvents:"none",zIndex:20,overflow:"visible"}}>
               <defs>
                 <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
                   <path d="M0,0 L0,6 L8,3 z" fill="#94A3B8"/>
                 </marker>
               </defs>
-              {arrows.map(({path,x2,y2,key})=>(
-                <g key={key}>
-                  <path d={path} fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeDasharray="4,3" markerEnd="url(#arrow)" opacity="0.7"/>
-                </g>
+              {arrows.map(({path,key})=>(
+                <path key={key} d={path} fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeDasharray="4,3" markerEnd="url(#arrow)" opacity="0.7"/>
               ))}
             </svg>
 
-            {/* Header */}
+            {/* FIX: Header sticky — position:sticky top:0 dentro del scroll container */}
             <div style={{position:"sticky",top:0,zIndex:100,background:"#FFF",borderBottom:"1px solid #E2E8F0",height:HEADER_H,display:"flex",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+              {/* Columnas fijas: nombre + fechas */}
               <div style={{width:FIXED_W,flexShrink:0,display:"flex",position:"sticky",left:0,zIndex:110,background:"#FFF"}}>
                 <div style={{width:labelW,borderRight:"1px solid #E2E8F0",display:"flex",alignItems:"flex-end",padding:"0 16px 10px",fontSize:10,color:"#94A3B8",letterSpacing:2,textTransform:"uppercase",fontWeight:600,position:"relative"}}>
                   Tarea
@@ -500,6 +489,7 @@ export default function App() {
                   <div style={{flex:1,textAlign:"center",fontSize:10,color:"#94A3B8",letterSpacing:1,textTransform:"uppercase",fontWeight:600}}>Fin</div>
                 </div>
               </div>
+              {/* Columnas de días */}
               <div style={{display:"flex"}}>
                 {Array.from({length:DAYS},(_,i)=>{
                   const d=addDays(rangeStart,i),isT=d.getTime()===todayD.getTime(),dow=d.getDay(),isW=dow===0||dow===6,isF=d.getDate()===1;
@@ -513,21 +503,22 @@ export default function App() {
             </div>
 
             {/* Línea hoy */}
-            {diffDays(rangeStart,todayD)>=0&&diffDays(rangeStart,todayD)<DAYS&&<div style={{position:"absolute",top:HEADER_H,bottom:0,left:FIXED_W+diffDays(rangeStart,todayD)*DAY_W+DAY_W/2,width:1,background:"#BFDBFE",pointerEvents:"none",zIndex:5}}/>}
+            {diffDays(rangeStart,todayD)>=0&&diffDays(rangeStart,todayD)<DAYS&&
+              <div style={{position:"absolute",top:HEADER_H,bottom:0,left:FIXED_W+diffDays(rangeStart,todayD)*DAY_W+DAY_W/2,width:1,background:"#BFDBFE",pointerEvents:"none",zIndex:5}}/>}
 
-            {/* Rows */}
+            {/* Filas */}
             {rows.map((row,ri)=>{
               const y=HEADER_H+ri*ROW_H,rowBg=ri%2===0?"#FFF":"#F8FAFC";
               if(row.type==="header"){
                 const color=getProjectColor(row.proj.color);
-                return <div key={`h_${row.proj.id}`} style={{position:"absolute",top:y,left:0,width:totalW,height:ROW_H,background:"#F1F5F9",borderBottom:"1px solid #E2E8F0",borderLeft:`3px solid ${color}`,display:"flex",alignItems:"center",cursor:"pointer"}} onClick={()=>setCollapsed(prev=>{const n=new Set(prev);n.has(row.proj.id)?n.delete(row.proj.id):n.add(row.proj.id);return n;})}>
-                  <div style={{width:FIXED_W-3,display:"flex",alignItems:"center",paddingLeft:12,gap:6,position:"sticky",left:3,background:"#F1F5F9",zIndex:106}}>
-                    <span style={{fontSize:10,color:"#94A3B8",display:"inline-block",transform:row.isCol?"rotate(-90deg)":"rotate(0deg)",transition:"transform 0.15s"}}>▾</span>
+                return <div key={`h_${row.proj.id}`} style={{position:"absolute",top:y,left:0,width:totalW,height:ROW_H,background:"#F1F5F9",borderBottom:"1px solid #E2E8F0",borderLeft:`3px solid ${color}`,display:"flex",alignItems:"center",cursor:"pointer"}}
+                  onClick={()=>setCollapsed(prev=>{const n=new Set(prev);n.has(row.proj.id)?n.delete(row.proj.id):n.add(row.proj.id);return n;})}>
+                  <div style={{width:FIXED_W-3,display:"flex",alignItems:"center",paddingLeft:12,gap:6,position:"sticky",left:3,background:"#F1F5F9",zIndex:6}}>
+                    <span style={{fontSize:10,color:"#94A3B8",display:"inline-block",transform:row.isCol?"rotate(-90deg)":"rotate(0deg)",transition:"transform 0.15s"}}>v</span>
                     <span style={{fontSize:11,fontWeight:700,color,letterSpacing:1,textTransform:"uppercase",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{row.proj.name}</span>
                   </div>
                 </div>;
               }
-
               const {task,dates,proj}=row;
               const barDates=getBarDates(task,dates);
               const pc=getPhaseColor(task.labels||[]);
@@ -537,54 +528,56 @@ export default function App() {
               const isDragging=dragState?.taskId===task.id;
               const isVD=vertDrag?.taskId===task.id;
               const bx1=xFromDate(barDates.start),bx2=xFromDate(barDates.end)+DAY_W,bw=Math.max(bx2-bx1,DAY_W);
-
               return <div key={task.id} style={{position:"absolute",top:y,left:0,width:totalW,height:ROW_H,background:isVD?hex2rgba(projC,0.08):rowBg,borderBottom:"1px solid #F1F5F9",display:"flex",alignItems:"center",opacity:saving===task.id?0.6:1}}>
-                {/* Fixed */}
+                {/* Columnas fijas */}
                 <div style={{width:FIXED_W,flexShrink:0,display:"flex",alignItems:"center",position:"sticky",left:0,background:isVD?hex2rgba(projC,0.08):rowBg,zIndex:6,height:"100%",borderRight:"1px solid #F1F5F9"}}>
-                  <div onMouseDown={e=>onVertDragStart(e,task,proj)} style={{width:18,flexShrink:0,height:"100%",cursor:"ns-resize",display:"flex",alignItems:"center",justifyContent:"center",color:"#CBD5E1",fontSize:11,userSelect:"none"}}>⠿</div>
+                  <div onMouseDown={e=>onVertDragStart(e,task,proj)} style={{width:18,flexShrink:0,height:"100%",cursor:"ns-resize",display:"flex",alignItems:"center",justifyContent:"center",color:"#CBD5E1",fontSize:11,userSelect:"none"}}>:</div>
                   <div style={{width:labelW-18,paddingRight:16,fontSize:12,color:isLate?"#EF4444":isCS?"#3B82F6":"#334155",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",cursor:"pointer",position:"relative",fontWeight:400}}
                     onClick={()=>{if(!connectMode)setPopup({task,dates,proj});else handleBarClick(task);}}>
-                    {isLate&&<span style={{marginRight:4,fontSize:10}}>⚑</span>}
-                    {deps.length>0&&<span style={{marginRight:4,fontSize:10,color:"#94A3B8"}}>🔗</span>}
+                    {isLate&&<span style={{marginRight:4,fontSize:10}}>!</span>}
+                    {deps.length>0&&<span style={{marginRight:4,fontSize:10,color:"#94A3B8"}}>link</span>}
                     {task.content}
                     <div onMouseDown={onLabelResizeDown} style={{position:"absolute",right:0,top:0,bottom:0,width:6,cursor:"col-resize"}}/>
                   </div>
-                  {/* Dates */}
                   <div style={{width:DATE_COL,flexShrink:0,display:"flex",alignItems:"center",height:"100%"}}>
                     <div style={{flex:1,textAlign:"center"}}>
-                      <button onClick={e=>{e.stopPropagation();setPopup({task,dates,proj,openField:"start"});}} style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"#64748B",padding:"2px 4px",borderRadius:4,width:"100%"}} onMouseEnter={e=>e.currentTarget.style.background="#F1F5F9"} onMouseLeave={e=>e.currentTarget.style.background="none"}>{fmtShort(barDates.start)}</button>
+                      <button onClick={e=>{e.stopPropagation();setPopup({task,dates,proj,openField:"start"});}}
+                        style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"#64748B",padding:"2px 4px",borderRadius:4,width:"100%"}}
+                        onMouseEnter={e=>e.currentTarget.style.background="#F1F5F9"} onMouseLeave={e=>e.currentTarget.style.background="none"}>{fmtShort(barDates.start)}</button>
                     </div>
                     <div style={{width:1,background:"#F1F5F9",height:16}}/>
                     <div style={{flex:1,textAlign:"center"}}>
-                      <button onClick={e=>{e.stopPropagation();setPopup({task,dates,proj,openField:"end"});}} style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"#64748B",padding:"2px 4px",borderRadius:4,width:"100%"}} onMouseEnter={e=>e.currentTarget.style.background="#F1F5F9"} onMouseLeave={e=>e.currentTarget.style.background="none"}>{fmtShort(barDates.end)}</button>
+                      <button onClick={e=>{e.stopPropagation();setPopup({task,dates,proj,openField:"end"});}}
+                        style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"#64748B",padding:"2px 4px",borderRadius:4,width:"100%"}}
+                        onMouseEnter={e=>e.currentTarget.style.background="#F1F5F9"} onMouseLeave={e=>e.currentTarget.style.background="none"}>{fmtShort(barDates.end)}</button>
                     </div>
                   </div>
                 </div>
-                {/* Bar */}
+                {/* Barra Gantt */}
                 <div style={{position:"relative",flex:1,height:"100%"}}>
-                  <div
-                    onMouseDown={e=>onBarDragStart(e,task,dates)}
+                  <div onMouseDown={e=>onBarDragStart(e,task,dates)}
                     onClick={()=>{if(connectMode)handleBarClick(task);}}
-                    style={{position:"absolute",left:bx1-FIXED_W,width:bw,top:7,height:ROW_H-14,background:isCS?hex2rgba(pc.border,0.3):pc.bg,border:`1.5px solid ${hex2rgba(pc.border,isCS?1:0.6)}`,borderRadius:5,cursor:connectMode?"pointer":isDragging?"grabbing":"grab",userSelect:"none",boxShadow:isDragging?"0 4px 12px rgba(0,0,0,0.1)":"0 1px 2px rgba(0,0,0,0.06)",transition:isDragging?"none":"box-shadow 0.15s"}}
-                  />
+                    style={{position:"absolute",left:bx1-FIXED_W,width:bw,top:7,height:ROW_H-14,background:isCS?hex2rgba(pc.border,0.3):pc.bg,border:`1.5px solid ${hex2rgba(pc.border,isCS?1:0.6)}`,borderRadius:5,cursor:connectMode?"pointer":isDragging?"grabbing":"grab",userSelect:"none",boxShadow:isDragging?"0 4px 12px rgba(0,0,0,0.1)":"0 1px 2px rgba(0,0,0,0.06)",transition:isDragging?"none":"box-shadow 0.15s"}}/>
                 </div>
               </div>;
             })}
 
-            {rows.length===0&&!loading&&<div style={{position:"absolute",top:HEADER_H+60,left:0,right:0,display:"flex",flexDirection:"column",alignItems:"center",gap:8}}><div style={{fontSize:36,color:"#CBD5E1"}}>◻</div><div style={{fontSize:13,color:"#94A3B8"}}>Sin tareas en este rango</div></div>}
+            {rows.length===0&&!loading&&<div style={{position:"absolute",top:HEADER_H+60,left:0,right:0,display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+              <div style={{fontSize:36,color:"#CBD5E1"}}>o</div>
+              <div style={{fontSize:13,color:"#94A3B8"}}>Sin tareas en este rango</div>
+            </div>}
           </div>
         </div>
       </div>
 
-      {/* Popup edición */}
-      {popup&&<TaskPopup task={popup.task} dates={popup.dates} proj={popup.proj} tasks={tasks}
-        onSave={saveTaskFull}
-        onClose={()=>setPopup(null)}
+      {popup&&<TaskPopup task={popup.task} dates={popup.dates} proj={popup.proj}
+        onSave={saveTaskFull} onClose={()=>setPopup(null)}
         onDeleteDep={(task,dep)=>{deleteDep(task,dep);setPopup(null);}}
-        onAddDep={()=>{setPopup(null);setConnectMode(true);setConnSrc(popup.task);}}
       />}
     </div>
   );
 }
 
-function Btn({children,onClick,style,primary}){return <button onClick={onClick} style={{background:primary?"#3B82F6":"transparent",border:primary?"none":"1px solid #E2E8F0",color:primary?"#FFF":"#64748B",padding:"5px 14px",borderRadius:6,cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:500,transition:"all 0.12s",...style}}>{children}</button>;}
+function Btn({children,onClick,style,primary}){
+  return <button onClick={onClick} style={{background:primary?"#3B82F6":"transparent",border:primary?"none":"1px solid #E2E8F0",color:primary?"#FFF":"#64748B",padding:"5px 14px",borderRadius:6,cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:500,transition:"all 0.12s",...style}}>{children}</button>;
+}
